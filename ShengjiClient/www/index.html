@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>升级 · 局域网4人</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- 连接页 -->
+<div id="screen-connect" class="screen">
+  <div class="panel">
+    <h1>升级 <small>单副54张 · 局域网4人</small></h1>
+    <label>你的昵称</label>
+    <input id="name" placeholder="玩家" maxlength="8">
+    <label>主机地址（同一 WiFi 下运行服务端那台设备的 IP）</label>
+    <input id="host" placeholder="例如 192.168.0.102（本机留空）">
+    <label>房间码（加入时填，创建可不填）</label>
+    <input id="code" placeholder="4位房间码" maxlength="6" style="text-transform:uppercase">
+    <div class="btn-row">
+      <button id="btn-create" class="primary">创建房间</button>
+      <button id="btn-join">加入房间</button>
+    </div>
+    <div id="conn-msg" class="msg"></div>
+    <p class="hint">从 App 的「创建主机 / 扫描加入」进入时，本页会<b>自动进房</b>，无需填写。手动连接时：主机地址填运行服务端那台设备的 IP（本机当主机则留空）。</p>
+  </div>
+</div>
+
+<!-- 游戏页 -->
+<div id="screen-game" class="screen hidden">
+  <div id="topbar">
+    <span id="room-info"></span>
+    <span id="level-info"></span>
+  </div>
+  <div id="seats"></div>
+  <div id="table">
+    <div id="trick"></div>
+    <div id="scores"></div>
+  </div>
+  <div id="bid-panel" class="hidden">
+    <div class="bid-cards" id="bid-cards"></div>
+    <div class="btn-row">
+      <button id="btn-pass">不亮</button>
+      <button id="btn-bidend">结束亮主</button>
+    </div>
+    <div id="bid-status" class="msg"></div>
+  </div>
+  <div id="kitty-panel" class="hidden">
+    <p>你是庄家，请选择 <b>6 张</b> 扣入底牌（<span class="warn">底牌不能有 5/10/K 分牌</span>）：</p>
+    <div id="kitty-cards"></div>
+    <div class="btn-row">
+      <button id="btn-kitty" class="primary" disabled>确认抠底</button>
+    </div>
+    <div id="kitty-status" class="msg"></div>
+  </div>
+  <div id="hand"></div>
+  <div id="toast" class="toast hidden"></div>
+</div>
+
+<script src="game.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

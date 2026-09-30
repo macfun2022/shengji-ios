@@ -1,0 +1,69 @@
+name: Build unsigned IPA
+
+# 触发方式：网页上手动点按钮，或每次推送到 main 自动编译
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    # 云端 macOS 机器，自带完整 Xcode（这是本地 Windows 无法替代的部分）
+    runs-on: macos-latest
+
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 显示编译环境
+        run: |
+          xcodebuild -version
+          echo "--- iOS SDK ---"
+          xcodebuild -showsdks | grep -i iphoneos || true
+
+      # 未签名编译：产出 .app，完全跳过证书/签名环节
+      - name: 编译（Release / 真机架构 / 不签名）
+        run: |
+          xcodebuild \
+            -project ShengjiClient.xcodeproj \
+            -scheme ShengjiClient \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_ENTITLEMENTS="" \
+            build
+
+      - name: 打包成 ipa
+        run: |
+          set -euo pipefail
+          APP="build/Build/Products/Release-iphoneos/ShengjiClient.app"
+          if [ ! -d "$APP" ]; then
+            echo "❌ 没找到构建产物，目录内容如下："
+            find build/Build/Products -maxdepth 2 || true
+            exit 1
+          fi
+
+          echo "=== .app 内容（确认 www 已打进包）==="
+          ls -la "$APP"
+          ls -la "$APP/www" 2>/dev/null || echo "⚠️ 未找到 www 子目录"
+
+          rm -rf dist
+          mkdir -p dist/Payload
+          cp -R "$APP" dist/Payload/
+          cd dist
+          zip -qry ShengjiClient-unsigned.ipa Payload
+
+          echo "=== 产物 ==="
+          ls -lh ShengjiClient-unsigned.ipa
+          shasum -a 256 ShengjiClient-unsigned.ipa
+
+      - name: 上传 IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: ShengjiClient-unsigned-ipa
+          path: dist/ShengjiClient-unsigned.ipa
+          if-no-files-found: error

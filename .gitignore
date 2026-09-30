@@ -1,0 +1,12 @@
+# 构建产物
+build/
+dist/
+DerivedData/
+*.xcarchive
+*.ipa
+
+# macOS
+.DS_Store
+
+# 注意：ShengjiClient.xcodeproj 已入库（由 project.yml 生成），
+# 若改动了 project.yml，请重新执行 xcodegen generate 并一起提交。

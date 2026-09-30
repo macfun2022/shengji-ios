@@ -1,0 +1,70 @@
+:root{
+  --bg:#0f5132; --felt:#15603b; --panel:#0c3d28; --gold:#f4c430; --red:#d33;
+  --ink:#16241c; --card:#fff; --muted:#9fb8a8;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;font-family:-apple-system,system-ui,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:#fff;overflow:hidden}
+.screen{position:fixed;inset:0}
+.hidden{display:none!important}
+
+/* 连接页 */
+#screen-connect{display:flex;align-items:center;justify-content:center;padding:18px}
+.panel{width:100%;max-width:420px;background:var(--panel);border-radius:16px;padding:22px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.panel h1{margin:0 0 14px;font-size:26px;color:var(--gold)}
+.panel h1 small{display:block;font-size:13px;color:var(--muted);font-weight:400;margin-top:4px}
+.panel label{display:block;margin:12px 0 5px;font-size:13px;color:var(--muted)}
+.panel input{width:100%;padding:12px;font-size:16px;border-radius:10px;border:1px solid #2a6b4c;background:#0a2e1f;color:#fff;outline:none}
+.btn-row{display:flex;gap:10px;margin-top:16px}
+button{flex:1;padding:13px;font-size:16px;border:none;border-radius:10px;background:#2a6b4c;color:#fff;font-weight:600;cursor:pointer}
+button.primary{background:var(--gold);color:#3a2c00}
+button:disabled{opacity:.45;cursor:not-allowed}
+.msg{margin-top:12px;min-height:18px;font-size:13px;color:#ffd479}
+.hint{font-size:12px;color:var(--muted);margin-top:16px;line-height:1.5}
+.hint code{background:#0a2e1f;padding:1px 5px;border-radius:4px}
+
+/* 游戏页 */
+#screen-game{display:flex;flex-direction:column}
+#topbar{display:flex;justify-content:space-between;padding:8px 12px;font-size:14px;background:rgba(0,0,0,.25)}
+#room-info{color:var(--gold)}
+#level-info{font-weight:700}
+#seats{flex:0 0 auto;display:flex;justify-content:space-around;padding:6px 8px;gap:6px}
+.seat{background:rgba(0,0,0,.28);border-radius:10px;padding:6px 8px;min-width:64px;text-align:center;font-size:12px;position:relative;border:2px solid transparent}
+.seat.you{border-color:var(--gold)}
+.seat.turn{box-shadow:0 0 0 2px var(--gold),0 0 12px var(--gold)}
+.seat.dealer::after{content:"庄";position:absolute;top:-8px;right:-6px;background:var(--gold);color:#3a2c00;font-size:10px;padding:1px 4px;border-radius:6px}
+.seat .nm{font-weight:600}
+.seat .cnt{color:var(--muted)}
+.seat .off{color:#ff7b7b;font-size:10px}
+
+#table{flex:1;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center}
+#trick{position:relative;width:200px;height:200px}
+.play-pos{display:flex;align-items:center;justify-content:center}
+#scores{position:absolute;top:6px;font-size:13px;background:rgba(0,0,0,.3);padding:4px 10px;border-radius:10px}
+#scores b{color:var(--gold)}
+
+/* 卡牌 */
+.card{width:42px;height:60px;background:var(--card);border-radius:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;color:var(--ink);position:relative;box-shadow:0 2px 4px rgba(0,0,0,.3);user-select:none}
+.card.red{color:var(--red)}
+.card.trump{border:2px solid var(--gold);box-shadow:0 0 8px var(--gold)}
+.card .r{font-size:16px;line-height:1}
+.card .s{font-size:14px}
+.card .pt{position:absolute;bottom:2px;right:3px;font-size:9px;color:#b8860b}
+.card.joker .r{font-size:11px;writing-mode:vertical-rl}
+.card.small{width:34px;height:48px}
+.card.small .r{font-size:13px}
+.card.small .s{font-size:11px}
+
+/* 手牌 */
+#hand{display:flex;justify-content:center;flex-wrap:wrap;gap:5px;padding:10px 8px calc(10px + env(safe-area-inset-bottom));background:rgba(0,0,0,.2);min-height:74px}
+#hand .card{cursor:pointer;transition:transform .08s}
+#hand .card.playable:hover,#hand .card.playable:active{transform:translateY(-8px)}
+#hand .card.disabled{opacity:.4}
+#hand .card.legal{outline:2px solid #6fe39b}
+
+/* 亮主/抠底面板 */
+#bid-panel,#kitty-panel{position:absolute;left:0;right:0;bottom:84px;background:rgba(8,40,26,.97);padding:12px;border-top:2px solid var(--gold);z-index:5}
+.bid-cards,#kitty-cards{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-bottom:8px;max-height:240px;overflow:auto}
+.warn{color:#ff9b9b}
+#bid-status{margin-top:8px;font-size:13px;color:#ffd479}
+
+.toast{position:fixed;left:50%;top:40%;transform:translateX(-50%);background:rgba(0,0,0,.8);padding:10px 16px;border-radius:10px;font-size:14px;z-index:20}

@@ -1,0 +1,32 @@
+# XcodeGen 配置：在 Mac 上执行 `xcodegen generate` 一键生成 Xcode 工程
+# （也提供现成的 .xcodeproj，二选一即可）
+name: ShengjiClient
+options:
+  bundleIdPrefix: com.shengji
+  deploymentTarget:
+    iOS: "15.0"
+  createIntermediateGroups: true
+
+targets:
+  ShengjiClient:
+    type: application
+    platform: iOS
+    sources:
+      - path: ShengjiClient
+        excludes:
+          - "www/**"
+      - path: ShengjiClient/www
+        type: folder          # 以「蓝色文件夹」整体打包，保留 www 目录结构
+        buildPhase: resources
+    info:
+      path: ShengjiClient/Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.shengji.app
+        MARKETING_VERSION: "2.0.0"
+        CURRENT_PROJECT_VERSION: "2"
+        TARGETED_DEVICE_FAMILY: "1"
+        INFOPLIST_FILE: ShengjiClient/Info.plist
+        SWIFT_VERSION: "5.0"
+        GENERATE_INFOPLIST_FILE: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
