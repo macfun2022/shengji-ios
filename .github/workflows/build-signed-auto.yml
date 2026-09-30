@@ -1,0 +1,127 @@
+name: Build signed IPA (云签名 · 免本地证书)
+
+# 最省事的一条路：只要一个 App Store Connect API Key，证书和描述文件交给苹果云端代管。
+# 只需要 3 个 secret：TEAM_ID / ASC_KEY_ID / ASC_ISSUER_ID / ASC_KEY_P8
+# 同样只支持手动触发，未配置前不会运行。
+
+on:
+  workflow_dispatch:
+    inputs:
+      distribution:
+        description: '分发方式'
+        required: true
+        default: 'app-store'
+        type: choice
+        options:
+          - app-store   # TestFlight / 上架
+          - ad-hoc      # 会顺带把当前已连接的设备注册进账号
+
+jobs:
+  build:
+    runs-on: macos-15
+
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 检查 secrets
+        env:
+          TEAM_ID: ${{ secrets.TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          missing=0
+          for v in TEAM_ID ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8; do
+            if [ -z "${!v}" ]; then echo "  ❌ 缺少 secret: $v"; missing=1; else echo "  ✅ $v"; fi
+          done
+          [ "$missing" = "0" ] || { echo; echo "请先补齐上述 secret，见「苹果正式签名-操作手册.md」。"; exit 1; }
+
+      - name: 准备 API Key
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          set -euo pipefail
+          echo -n "$ASC_KEY_P8" | base64 --decode > "$RUNNER_TEMP/asc_key.p8"
+          echo "P8_PATH=$RUNNER_TEMP/asc_key.p8" >> "$GITHUB_ENV"
+
+      - name: Archive（云端自动签发证书与描述文件）
+        env:
+          TEAM_ID: ${{ secrets.TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          xcodebuild archive \
+            -project ShengjiClient.xcodeproj \
+            -scheme ShengjiClient \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/ShengjiClient.xcarchive \
+            -allowProvisioningUpdates \
+            -allowProvisioningDeviceRegistration \
+            -authenticationKeyPath "$P8_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            CODE_SIGN_STYLE=Automatic \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
+            build
+
+      - name: 导出 IPA
+        env:
+          TEAM_ID: ${{ secrets.TEAM_ID }}
+        run: |
+          set -euo pipefail
+          case "${{ inputs.distribution }}" in
+            ad-hoc)    METHOD="ad-hoc";            TAG="adhoc" ;;
+            app-store) METHOD="app-store-connect"; TAG="appstore" ;;
+          esac
+
+          PB=/usr/libexec/PlistBuddy
+          PLIST="$RUNNER_TEMP/ExportOptions.plist"
+          printf '%s\n' \
+            '<?xml version="1.0" encoding="UTF-8"?>' \
+            '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' \
+            '<plist version="1.0">' '<dict/>' '</plist>' > "$PLIST"
+
+          $PB -c "Add :method string $METHOD"       "$PLIST"
+          $PB -c "Add :destination string export"   "$PLIST"
+          $PB -c "Add :teamID string $TEAM_ID"      "$PLIST"
+          $PB -c "Add :signingStyle string automatic" "$PLIST"
+          $PB -c "Add :stripSwiftSymbols bool true" "$PLIST"
+          $PB -c "Add :compileBitcode bool false"   "$PLIST"
+          plutil -p "$PLIST"
+
+          rm -rf dist && mkdir -p dist
+          xcodebuild -exportArchive \
+            -archivePath build/ShengjiClient.xcarchive \
+            -exportPath dist \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$P8_PATH" \
+            -authenticationKeyID "${{ secrets.ASC_KEY_ID }}" \
+            -authenticationKeyIssuerID "${{ secrets.ASC_ISSUER_ID }}"
+
+          IPA=$(find dist -name '*.ipa' | head -1)
+          mv "$IPA" "dist/Shengji-$TAG.ipa"
+          ls -lh dist/
+          shasum -a 256 "dist/Shengji-$TAG.ipa"
+
+      - name: 校验签名
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/sigchk && mkdir -p /tmp/sigchk
+          unzip -q dist/Shengji-*.ipa -d /tmp/sigchk
+          APP=$(find /tmp/sigchk/Payload -maxdepth 1 -name '*.app' | head -1)
+          codesign -dv --verbose=4 "$APP" 2>&1 | grep -E 'Identifier|TeamIdentifier|Authority|Expires' || true
+          codesign --verify --deep --strict "$APP" && echo "✅ 校验通过"
+          ls -la "$APP/www" || { echo "❌ 缺少 www 目录"; exit 1; }
+
+      - name: 上传 IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: shengji-signed-ipa
+          path: dist/*.ipa
+          if-no-files-found: error
